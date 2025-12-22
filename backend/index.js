@@ -2,6 +2,8 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 
 const app = express();
+app.use(express.json());
+
 const prisma = new PrismaClient();
 const PORT = 3000;
 
@@ -27,4 +29,42 @@ app.get("/test-db", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+app.post("/courses", async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    const course = await prisma.course.create({
+      data: {
+        title,
+        description,
+      },
+    });
+
+    res.status(201).json(course);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create course" });
+  }
+});
+
+app.post("/lessons", async (req, res) => {
+  try {
+    const { title, contentLength, difficultyLevel, courseId } = req.body;
+
+    const lesson = await prisma.lesson.create({
+      data: {
+        title,
+        contentLength,
+        difficultyLevel,
+        courseId,
+      },
+    });
+
+    res.status(201).json(lesson);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create lesson" });
+  }
 });
