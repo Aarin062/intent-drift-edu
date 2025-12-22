@@ -68,3 +68,23 @@ app.post("/lessons", async (req, res) => {
     res.status(500).json({ error: "Failed to create lesson" });
   }
 });
+
+app.post("/activity", async (req, res) => {
+  try {
+    const { userId, lessonId, timeSpent, completed } = req.body;
+
+    const activity = await prisma.lessonActivity.create({
+      data: {
+        userId,
+        lessonId,
+        timeSpent,
+        completed,
+      },
+    });
+
+    res.status(201).json(activity);
+  } catch (error) {
+    console.error("ACTIVITY LOG ERROR:", error);
+    res.status(500).json({ error: "Failed to log activity" });
+  }
+});
