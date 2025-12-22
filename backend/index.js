@@ -218,6 +218,106 @@ app.get("/metrics/drift/:userId", async (req, res) => {
   }
 });
 
+app.get("/metrics/effort-deviation/:userId", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    const activities = await prisma.lessonActivity.findMany({
+      where: { userId },
+      include: { lesson: true },
+    });
+
+    const results = activities.map((a) => {
+      const expectedTime = a.lesson.contentLength * 60;
+      const effortDeviation = a.timeSpent - expectedTime;
+
+      return {
+        lessonId: a.lessonId,
+        timeSpent: a.timeSpent,
+        expectedTime,
+        effortDeviation,
+        timestamp: a.timestamp,
+      };
+    });
+
+    res.json(results);
+  } catch (error) {
+    console.error("EFFORT DEVIATION ERROR:", error);
+    res.status(500).json({ error: "Failed to compute effort deviation" });
+  }
+});
+
+app.get("/metrics/early-exit/:userId", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    const activities = await prisma.lessonActivity.findMany({
+      where: { userId },
+      include: { lesson: true },
+    });
+
+    const results = activities.map((a) => {
+      const expectedTime = a.lesson.contentLength * 60;
+      const earlyExit =
+        a.completed === false && a.timeSpent < expectedTime * 0.3;
+
+      return {
+        lessonId: a.lessonId,
+        timeSpent: a.timeSpent,
+        expectedTime,
+        earlyExit,
+        timestamp: a.timestamp,
+      };
+    });
+
+    res.json(results);
+  } catch (error) {
+    console.error("EARLY EXIT ERROR:", error);
+    res.status(500).json({ error: "Failed to compute early exit indicator" });
+  }
+});
+
+app.get("/metrics/difficulty-avoidance/:userId", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    const activities = await prisma.lessonActivity.findMany({
+      where: { userId },
+      include: { lesson: true },
+    });
+
+    const difficultyMap = {};
+
+    activities.forEach((a) => {
+      const expected = a.lesson.contentLength * 60;
+      const depth = a.timeSpent / expected;
+      const level = a.lesson.difficultyLevel;
+
+      if (!difficultyMap[level]) {
+        difficultyMap[level] = { totalDepth: 0, count: 0 };
+      }
+
+      difficultyMap[level].totalDepth += depth;
+      difficultyMap[level].count += 1;
+    });
+
+    const results = Object.entries(difficultyMap).map(
+      ([difficulty, data]) => ({
+        difficulty,
+        averageEngagementDepth: Number(
+          (data.totalDepth / data.count).toFixed(2)
+        ),
+      })
+    );
+
+    res.json(results);
+  } catch (error) {
+    console.error("DIFFICULTY AVOIDANCE ERROR:", error);
+    res.status(500).json({ error: "Failed to compute difficulty avoidance" });
+  }
+});
+
+
 app.get("/metrics/intent-report/:userId", async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
@@ -234,34 +334,100 @@ app.get("/metrics/intent-report/:userId", async (req, res) => {
 
     let shallowCompletions = 0;
     let totalCompletions = 0;
-    const revisitMap = {};
-
+    let earlyExits = 0;
     let totalDepth = 0;
+
+    const difficultyMap = {};
+    const depthTimeline = [];
 
     activities.forEach((a) => {
       const expected = a.lesson.contentLength * 60;
       const depth = a.timeSpent / expected;
+
       totalDepth += depth;
+      depthTimeline.push(depth);
 
       if (a.completed) {
         totalCompletions++;
         if (depth < 0.4) shallowCompletions++;
       }
 
-      revisitMap[a.lessonId] = (revisitMap[a.lessonId] || 0) + 1;
+      if (!a.completed && a.timeSpent < expected * 0.3) {
+        earlyExits++;
+      }
+
+      const level = a.lesson.difficultyLevel;
+      if (!difficultyMap[level]) {
+        difficultyMap[level] = { total: 0, count: 0 };
+      }
+      difficultyMap[level].total += depth;
+      difficultyMap[level].count += 1;
     });
 
-    const avgEngagementDepth = totalDepth / activities.length;
-    const completionConsistency =
-      totalCompletions === 0
-        ? "N/A"
-        : `${shallowCompletions}/${totalCompletions} shallow completions`;
+    const avgEngagement = totalDepth / activities.length;
+
+    // Drift detection
+    const mid = Math.floor(depthTimeline.length / 2);
+    const earlyAvg =
+      depthTimeline.slice(0, mid).reduce((a, b) => a + b, 0) /
+      Math.max(mid, 1);
+    const recentAvg =
+      depthTimeline.slice(mid).reduce((a, b) => a + b, 0) /
+      Math.max(depthTimeline.length - mid, 1);
+
+    const driftDetected = recentAvg < earlyAvg * 0.7;
+
+    // Difficulty avoidance summary
+    const difficultySummary = Object.entries(difficultyMap).map(
+      ([difficulty, data]) => ({
+        difficulty,
+        avgEngagementDepth: Number((data.total / data.count).toFixed(2)),
+      })
+    );
+
+    // Explanations
+    const explanations = [];
+
+    if (avgEngagement < 0.5) {
+      explanations.push("Overall engagement is low compared to expectations.");
+    }
+
+    if (shallowCompletions > 0) {
+      explanations.push(
+        "Multiple lessons were completed with insufficient engagement time."
+      );
+    }
+
+    if (earlyExits > 0) {
+      explanations.push(
+        "Frequent early exits detected, indicating possible disengagement."
+      );
+    }
+
+    const hard = difficultySummary.find((d) => d.difficulty === "hard");
+    const easy = difficultySummary.find((d) => d.difficulty === "easy");
+
+    if (hard && easy && hard.avgEngagementDepth < easy.avgEngagementDepth * 0.5) {
+      explanations.push(
+        "Engagement drops significantly on higher difficulty lessons."
+      );
+    }
+
+    if (driftDetected) {
+      explanations.push(
+        "Engagement has declined over time, indicating intent drift."
+      );
+    }
 
     res.json({
-      averageEngagementDepth: Number(avgEngagementDepth.toFixed(2)),
-      completionConsistency,
-      revisitSummary: revisitMap,
-      totalActivities: activities.length,
+      summary: {
+        averageEngagementDepth: Number(avgEngagement.toFixed(2)),
+        shallowCompletions,
+        earlyExits,
+        driftDetected,
+      },
+      difficultySummary,
+      explanations,
     });
   } catch (error) {
     console.error("INTENT REPORT ERROR:", error);
