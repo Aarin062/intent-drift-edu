@@ -434,3 +434,105 @@ app.get("/metrics/intent-report/:userId", async (req, res) => {
     res.status(500).json({ error: "Failed to generate intent report" });
   }
 });
+
+app.get("/metrics/batch/intent-summary", async (req, res) => {
+  try {
+    const activities = await prisma.lessonActivity.findMany({
+      include: { lesson: true },
+      orderBy: { timestamp: "asc" },
+    });
+
+    if (activities.length === 0) {
+      return res.json({ message: "No activity data available" });
+    }
+
+    // Group activities by user
+    const userMap = {};
+    activities.forEach((a) => {
+      if (!userMap[a.userId]) userMap[a.userId] = [];
+      userMap[a.userId].push(a);
+    });
+
+    let totalLearners = 0;
+    let learnersWithDrift = 0;
+    let learnersWithEarlyExit = 0;
+    let totalDepth = 0;
+    let totalActivities = 0;
+
+    let difficultyAvoidanceCount = 0;
+
+    Object.values(userMap).forEach((acts) => {
+      totalLearners++;
+
+      let earlyExits = 0;
+      let depthTimeline = [];
+      let difficultyDepth = { easy: [], hard: [] };
+
+      acts.forEach((a) => {
+        const expected = a.lesson.contentLength * 60;
+        const depth = a.timeSpent / expected;
+
+        totalDepth += depth;
+        totalActivities++;
+        depthTimeline.push(depth);
+
+        if (!a.completed && a.timeSpent < expected * 0.3) {
+          earlyExits++;
+        }
+
+        if (a.lesson.difficultyLevel === "easy")
+          difficultyDepth.easy.push(depth);
+        if (a.lesson.difficultyLevel === "hard")
+          difficultyDepth.hard.push(depth);
+      });
+
+      if (earlyExits > 0) learnersWithEarlyExit++;
+
+      // Drift detection (same logic as before)
+      if (depthTimeline.length >= 2) {
+        const mid = Math.floor(depthTimeline.length / 2);
+        const earlyAvg =
+          depthTimeline.slice(0, mid).reduce((a, b) => a + b, 0) /
+          Math.max(mid, 1);
+        const recentAvg =
+          depthTimeline.slice(mid).reduce((a, b) => a + b, 0) /
+          Math.max(depthTimeline.length - mid, 1);
+
+        if (recentAvg < earlyAvg * 0.7) {
+          learnersWithDrift++;
+        }
+      }
+
+      // Difficulty avoidance
+      if (
+        difficultyDepth.easy.length > 0 &&
+        difficultyDepth.hard.length > 0
+      ) {
+        const easyAvg =
+          difficultyDepth.easy.reduce((a, b) => a + b, 0) /
+          difficultyDepth.easy.length;
+        const hardAvg =
+          difficultyDepth.hard.reduce((a, b) => a + b, 0) /
+          difficultyDepth.hard.length;
+
+        if (hardAvg < easyAvg * 0.5) {
+          difficultyAvoidanceCount++;
+        }
+      }
+    });
+
+    res.json({
+      totalLearners,
+      averageEngagementDepth: Number(
+        (totalDepth / totalActivities).toFixed(2)
+      ),
+      learnersWithDrift,
+      learnersWithEarlyExit,
+      widespreadDifficultyAvoidance:
+        difficultyAvoidanceCount > totalLearners / 2,
+    });
+  } catch (error) {
+    console.error("BATCH INTENT SUMMARY ERROR:", error);
+    res.status(500).json({ error: "Failed to generate batch intent summary" });
+  }
+});
