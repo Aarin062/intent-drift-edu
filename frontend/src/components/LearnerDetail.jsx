@@ -30,13 +30,34 @@ function LearnerDetail({ learner }) {
       <p><strong>Email:</strong> {learner.email}</p>
 
       {metrics ? (
-        <>
-          <MetricBreakdown metrics={metrics} />
-          <IntentTimeline timeline={metrics.timeline} />
-        </>
-      ) : (
-        <p>Loading learner metrics...</p>
-      )}
+  <>
+    <div style={{ margin: "10px 0" }}>
+      <strong>Intent Status: </strong>
+      <span
+        style={{
+          padding: "6px 10px",
+          borderRadius: "6px",
+          backgroundColor:
+            metrics.intentStatus === "Disengaged"
+              ? "#ff4d4d"
+              : metrics.intentStatus === "Early Exit Pattern"
+              ? "#ff944d"
+              : metrics.intentStatus === "Difficulty Avoidance"
+              ? "#ffd633"
+              : "#4CAF50",
+          color: "white"
+        }}
+      >
+        {metrics.intentStatus}
+      </span>
+    </div>
+
+    <MetricBreakdown metrics={metrics} />
+    <IntentTimeline timeline={metrics.timeline} />
+  </>
+) : (
+  <p>Loading learner metrics...</p>
+)}
     </section>
   );
 }

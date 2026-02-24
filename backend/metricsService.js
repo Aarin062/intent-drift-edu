@@ -86,6 +86,23 @@ function generateTimeline(activities) {
 // Main Learner Metric Aggregator
 // =============================
 
+function classifyIntent(metrics) {
+  if (metrics.engagementDepth < 0.3) {
+    return "Disengaged";
+  }
+
+  if (metrics.earlyExit > 0.5) {
+    return "Early Exit Pattern";
+  }
+
+  if (metrics.difficultyAvoidance > 0.5) {
+    return "Difficulty Avoidance";
+  }
+
+  return "Healthy";
+}
+
+
 function calculateLearnerMetrics(activities) {
   if (!activities.length) {
     return {
@@ -94,17 +111,23 @@ function calculateLearnerMetrics(activities) {
       difficultyAvoidance: 0,
       completionConsistency: 0,
       effortDeviation: 0,
-      timeline: []
+      timeline: [],
+      intentStatus: "No Activity"
     };
   }
 
-  return {
+  const baseMetrics = {
     engagementDepth: getEngagementDepth(activities),
     earlyExit: getEarlyExitRate(activities),
     difficultyAvoidance: getDifficultyAvoidance(activities),
     completionConsistency: getCompletionConsistency(activities),
     effortDeviation: getEffortDeviation(activities),
     timeline: generateTimeline(activities)
+  };
+
+  return {
+    ...baseMetrics,
+    intentStatus: classifyIntent(baseMetrics)
   };
 }
 
@@ -118,5 +141,6 @@ module.exports = {
   getDifficultyAvoidance,
   getCompletionConsistency,
   getEffortDeviation,
-  calculateLearnerMetrics
+  calculateLearnerMetrics,
+  classifyIntent
 };
