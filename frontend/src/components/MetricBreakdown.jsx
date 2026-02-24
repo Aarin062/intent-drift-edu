@@ -1,12 +1,15 @@
-function MetricBreakdown() {
+function MetricBreakdown({ metrics }) {
+  if (!metrics) return null;
+
   return (
     <section>
       <h3>Metric Breakdown</h3>
       <ul>
-        <li>Engagement Depth: [value]</li>
-        <li>Early Exit Rate: [value]</li>
-        <li>Difficulty Avoidance: [value]</li>
-        <li>Completion Consistency: [value]</li>
+        <li>Engagement Depth: {metrics.engagementDepth}</li>
+        <li>Early Exit Rate: {metrics.earlyExitRate}</li>
+        <li>Difficulty Avoidance: {metrics.difficultyAvoidance}</li>
+        <li>Completion Consistency: {metrics.completionConsistency}</li>
+        <li>Effort Deviation: {metrics.effortDeviation}</li>
       </ul>
     </section>
   );

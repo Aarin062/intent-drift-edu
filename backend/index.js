@@ -1,3 +1,10 @@
+const {
+  getEngagementDepth,
+  getEarlyExitRate,
+  getDifficultyAvoidance,
+  getCompletionConsistency
+} = require("./metricsService"); 
+
 const cors = require("cors");
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
@@ -539,5 +546,82 @@ app.get("/metrics/batch/intent-summary", async (req, res) => {
   } catch (error) {
     console.error("BATCH INTENT SUMMARY ERROR:", error);
     res.status(500).json({ error: "Failed to generate batch intent summary" });
+  }
+});
+
+
+const { calculateLearnerMetrics } = require("./metricsService");
+
+app.get("/metrics/learner/:id", async (req, res) => {
+  try {
+    const learnerId = parseInt(req.params.id);
+
+    const activities = await prisma.lessonActivity.findMany({
+      where: { userId: learnerId },
+      include: {
+        lesson: true
+      }
+    });
+
+    const metrics = calculateLearnerMetrics(activities);
+
+    res.json(metrics);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch learner metrics" });
+  }
+});
+
+
+app.get("/learners", async (req, res) => {
+  try {
+    const learners = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+    res.json(learners);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch learners" });
+  }
+});
+
+app.get("/activity", async (req, res) => {
+  try {
+    const activity = await prisma.lessonActivity.findMany({
+      include: {
+        lesson: true,
+        user: true
+      }
+    });
+
+    res.json(activity);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch activity" });
+  }
+});
+
+
+app.get("/activity/:userId", async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+
+    const activity = await prisma.lessonActivity.findMany({
+      where: { userId },
+      include: {
+        lesson: true
+      },
+      orderBy: { timestamp: "asc" }
+    });
+
+    res.json(activity);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch user activity" });
   }
 });

@@ -3,35 +3,45 @@ import Header from "../components/Header";
 import ClassOverview from "../components/ClassOverview";
 import LearnerTable from "../components/LearnerTable";
 import LearnerDetail from "../components/LearnerDetail";
-import { getBatchIntentSummary } from "../services/api";
+import {
+  getBatchIntentSummary,
+  getLearners
+} from "../services/api";
 
 function DashboardPage() {
+  // 🔹 class-level
   const [batchSummary, setBatchSummary] = useState(null);
 
-  // useEffect(() => {
-  //   getBatchIntentSummary()
-  //     .then((data) => setBatchSummary(data))
-  //     .catch((err) => console.error(err));
-  // }, []);
+  // 🔹 learner-level
+  const [learners, setLearners] = useState([]);
+  const [selectedLearner, setSelectedLearner] = useState(null);
 
+  // fetch class summary
   useEffect(() => {
-  console.log("useEffect triggered");
+    getBatchIntentSummary()
+      .then(setBatchSummary)
+      .catch(console.error);
+  }, []);
 
-  getBatchIntentSummary()
-    .then((data) => {
-      console.log("Batch summary data:", data);
-      setBatchSummary(data);
-    })
-    .catch((err) => console.error(err));
-}, []);
-
+  // fetch learners
+  useEffect(() => {
+    getLearners()
+      .then(setLearners)
+      .catch(console.error);
+  }, []);
 
   return (
     <div>
       <Header />
+
       <ClassOverview summary={batchSummary} />
-      <LearnerTable />
-      <LearnerDetail />
+
+      <LearnerTable
+        learners={learners}
+        onSelect={setSelectedLearner}
+      />
+
+      <LearnerDetail learner={selectedLearner} />
     </div>
   );
 }
