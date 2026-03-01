@@ -5,6 +5,7 @@ import { getLearnerMetrics } from "../services/api";
 
 function LearnerDetail({ learner }) {
   const [metrics, setMetrics] = useState(null);
+  const [showFormula, setShowFormula] = useState(false);
 
   useEffect(() => {
     if (!learner) return;
@@ -43,7 +44,7 @@ function LearnerDetail({ learner }) {
               : metrics.intentStatus === "Early Exit Pattern"
               ? "#ff944d"
               : metrics.intentStatus === "Difficulty Avoidance"
-              ? "#ffd633"
+              ? "#9C27B0"
               : "#4CAF50",
           color: "white"
         }}
@@ -53,7 +54,61 @@ function LearnerDetail({ learner }) {
     </div>
 
     <MetricBreakdown metrics={metrics} />
-    <IntentTimeline timeline={metrics.timeline} />
+
+    <div style={{ marginTop: "20px" }}>
+      <button
+        onClick={() => setShowFormula(!showFormula)}
+        style={{
+          background: "none",
+          border: "none",
+          color: "#4da6ff",
+          cursor: "pointer",
+          fontSize: "14px",
+          padding: 0
+        }}
+      >
+        ℹ How are these metrics calculated?
+      </button>
+
+      {showFormula && (
+        <div
+          style={{
+            marginTop: "15px",
+            padding: "15px",
+            backgroundColor: "#1a1a1a",
+            borderRadius: "8px",
+            fontSize: "14px",
+            lineHeight: "1.6",
+            color: "#ccc"
+          }}
+        >
+          <p>
+            <strong>Engagement Depth:</strong><br />
+            timeSpent ÷ (lessonLength × 60)
+          </p>
+
+          <p>
+            <strong>Early Exit Rate:</strong><br />
+            Sessions where timeSpent &lt; 30% of expected time
+          </p>
+
+          <p>
+            <strong>Difficulty Avoidance:</strong><br />
+            Hard lesson engagement compared to easy lessons
+          </p>
+
+          <p>
+            <strong>Completion Consistency:</strong><br />
+            completedSessions ÷ totalSessions
+          </p>
+        </div>
+      )}
+    </div>
+
+    <IntentTimeline 
+  timeline={metrics.timeline}
+  intentStatus={metrics.intentStatus}
+/>
   </>
 ) : (
   <p>Loading learner metrics...</p>

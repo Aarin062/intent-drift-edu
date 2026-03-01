@@ -525,13 +525,27 @@ app.get("/metrics/learner/:id", async (req, res) => {
 app.get("/learners", async (req, res) => {
   try {
     const learners = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true
+      include: {
+        activities: {
+          include: {
+            lesson: true
+          }
+        }
       }
     });
-    res.json(learners);
+
+    const enriched = learners.map((learner) => {
+      const metrics = calculateLearnerMetrics(learner.activities);
+      return {
+        id: learner.id,
+        name: learner.name,
+        email: learner.email,
+        intentStatus: metrics.intentStatus
+      };
+    });
+
+    res.json(enriched);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch learners" });
