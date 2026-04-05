@@ -51,6 +51,22 @@ function LearnerDetail({ learner }) {
       >
         {metrics.intentStatus}
       </span>
+      <p style={{ marginTop: "10px" }}>
+        <strong>Engagement Trend:</strong>{" "}
+        <span
+          style={{
+            color:
+              metrics.intentDrift < -0.1
+                ? "#F44336"   // red
+                : metrics.intentDrift > 0.1
+                ? "#4CAF50"   // green
+                : "#ccc"      // neutral
+          }}
+        >
+          {metrics.intentDrift > 0 ? "+" : ""}
+          {metrics.intentDrift}
+        </span>
+      </p>
     </div>
 
     <MetricBreakdown metrics={metrics} />
@@ -82,6 +98,12 @@ function LearnerDetail({ learner }) {
             color: "#ccc"
           }}
         >
+          <p>
+            <strong>Engagement Trend:</strong><br />
+            (Recent Engagement Avg − Earlier Engagement Avg)<br />
+            Shows whether the learner is improving or declining over time.
+          </p>
+
           <p>
             <strong>Engagement Depth:</strong><br />
             timeSpent ÷ (lessonLength × 60)

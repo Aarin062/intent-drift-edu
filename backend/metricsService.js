@@ -112,7 +112,8 @@ function calculateLearnerMetrics(activities) {
       completionConsistency: 0,
       effortDeviation: 0,
       timeline: [],
-      intentStatus: "No Activity"
+      intentStatus: "No Activity",
+      intentDrift: 0   
     };
   }
 
@@ -125,10 +126,37 @@ function calculateLearnerMetrics(activities) {
     timeline: generateTimeline(activities)
   };
 
+  const intentDrift = getIntentDrift(baseMetrics.timeline); 
+
   return {
     ...baseMetrics,
-    intentStatus: classifyIntent(baseMetrics)
+    intentStatus: classifyIntent(baseMetrics),
+    intentDrift   
   };
+}
+
+function getIntentDrift(timeline) {
+  if (!timeline || timeline.length < 2) return 0;
+
+  // extract only valid numbers
+  const scores = timeline
+    .map((t) => t.engagementScore)
+    .filter((s) => typeof s === "number" && !isNaN(s));
+
+  if (scores.length < 2) return 0;
+
+  const mid = Math.floor(scores.length / 2);
+
+  const early = scores.slice(0, mid);
+  const recent = scores.slice(mid);
+
+  const avg = (arr) =>
+    arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+  const earlyAvg = avg(early);
+  const recentAvg = avg(recent);
+
+  return Number((recentAvg - earlyAvg).toFixed(2));
 }
 
 // =============================
@@ -142,5 +170,6 @@ module.exports = {
   getCompletionConsistency,
   getEffortDeviation,
   calculateLearnerMetrics,
+  getIntentDrift,
   classifyIntent
 };
