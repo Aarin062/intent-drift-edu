@@ -7,15 +7,12 @@ function LearnerTable({ learners, onSelect }) {
       </section>
     );
   }
+  
+  const getTrendSymbol = (drift) => {
+    if (drift === null || drift === undefined) return "→";
 
-  const getTrendSymbol = (timeline) => {
-    if (!timeline || timeline.length < 2) return "→";
-
-    const first = timeline[0].engagementScore;
-    const last = timeline[timeline.length - 1].engagementScore;
-
-    if (last > first + 0.1) return "↑";
-    if (last < first - 0.1) return "↓";
+    if (drift > 0.1) return "↑";
+    if (drift < -0.1) return "↓";
     return "→";
   };
 
@@ -50,7 +47,6 @@ function LearnerTable({ learners, onSelect }) {
               <th style={{ padding: "10px 15px" }}>Name</th>
               <th style={{ padding: "10px 15px" }}>Status</th>
               <th style={{ padding: "10px 15px" }}>Engagement</th>
-              <th style={{ padding: "10px 15px" }}>Early Exit</th>
               <th style={{ padding: "10px 15px" }}>Trend</th>
             </tr>
           </thead>
@@ -103,12 +99,8 @@ function LearnerTable({ learners, onSelect }) {
                     {metrics?.engagementDepth}
                   </td>
 
-                  <td style={{ padding: "15px" }}>
-                    {metrics?.earlyExit}
-                  </td>
-
                   <td style={{ padding: "15px", fontSize: "18px" }}>
-                    {getTrendSymbol(metrics?.timeline)}
+                    {getTrendSymbol(metrics?.intentDrift)}
                   </td>
                 </tr>
               );

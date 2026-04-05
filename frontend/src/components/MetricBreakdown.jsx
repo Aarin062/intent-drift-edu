@@ -9,7 +9,7 @@ function MetricBreakdown({ metrics }) {
         <li>Early Exit Rate: {metrics.earlyExit}</li>
         <li>Difficulty Avoidance: {metrics.difficultyAvoidance}</li>
         <li>Completion Consistency: {metrics.completionConsistency}</li>
-        <li>Effort Deviation: {metrics.effortDeviation}</li>
+        <li>Effort Consistency: {metrics.effortConsistency}</li>
       </ul>
     </section>
   );

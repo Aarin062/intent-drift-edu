@@ -51,8 +51,9 @@ function getCompletionConsistency(activities) {
   return Number((completed / activities.length).toFixed(2));
 }
 
-// Effort Deviation (Expected vs Actual)
-function getEffortDeviation(activities) {
+
+// Effort Consistency (Expected vs Actual)
+function getEffortConsistency(activities) {
   if (!activities.length) return 0;
 
   const totalDeviation = activities.reduce((sum, a) => {
@@ -61,7 +62,11 @@ function getEffortDeviation(activities) {
     return sum + deviation;
   }, 0);
 
-  return Number((totalDeviation / activities.length).toFixed(2));
+  const avgDeviation = totalDeviation / activities.length;
+
+  const consistency = 1 - avgDeviation;
+
+  return Number(consistency.toFixed(2));
 }
 
 // =============================
@@ -110,7 +115,7 @@ function calculateLearnerMetrics(activities) {
       earlyExit: 0,
       difficultyAvoidance: 0,
       completionConsistency: 0,
-      effortDeviation: 0,
+      effortConsistency: 0,
       timeline: [],
       intentStatus: "No Activity",
       intentDrift: 0   
@@ -122,7 +127,7 @@ function calculateLearnerMetrics(activities) {
     earlyExit: getEarlyExitRate(activities),
     difficultyAvoidance: getDifficultyAvoidance(activities),
     completionConsistency: getCompletionConsistency(activities),
-    effortDeviation: getEffortDeviation(activities),
+    effortConsistency: getEffortConsistency(activities),
     timeline: generateTimeline(activities)
   };
 
@@ -168,7 +173,7 @@ module.exports = {
   getEarlyExitRate,
   getDifficultyAvoidance,
   getCompletionConsistency,
-  getEffortDeviation,
+  getEffortConsistency,
   calculateLearnerMetrics,
   getIntentDrift,
   classifyIntent

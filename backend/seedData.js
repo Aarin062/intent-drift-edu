@@ -2,141 +2,111 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding database...");
-
-  // Clear existing data
+  // 🔥 Clear old data
   await prisma.lessonActivity.deleteMany();
   await prisma.lesson.deleteMany();
   await prisma.course.deleteMany();
   await prisma.user.deleteMany();
 
-  // -----------------------
-  // Create Course
-  // -----------------------
+  // 📚 Create Course
   const course = await prisma.course.create({
     data: {
       title: "Programming Fundamentals",
-      description: "Core programming concepts"
+      description: "Sample course"
     }
   });
 
-  // -----------------------
-  // Create Lessons
-  // -----------------------
-  const lessons = [];
+  // 📖 Create Lessons
+  const lessons = await Promise.all(
+    Array.from({ length: 6 }).map((_, i) =>
+      prisma.lesson.create({
+        data: {
+          title: `Lesson ${i + 1}`,
+          contentLength: 10 + i * 5,
+          difficultyLevel:
+            i < 2 ? "easy" : i < 4 ? "medium" : "hard",
+          courseId: course.id
+        }
+      })
+    )
+  );
 
-  const difficulties = [
-    "easy","easy","easy","medium","medium","medium",
-    "hard","hard","hard","easy","medium","hard"
-  ];
+  // 👨‍🎓 Create 20 students
+  const users = await Promise.all(
+    Array.from({ length: 20 }).map((_, i) =>
+      prisma.user.create({
+        data: {
+          name: `Student ${i + 1}`,
+          email: `student${i + 1}@test.com`
+        }
+      })
+    )
+  );
 
-  for (let i = 0; i < 12; i++) {
-    const lesson = await prisma.lesson.create({
-      data: {
-        title: `Lesson ${i + 1}`,
-        contentLength: 10 + (i % 3) * 5, // 10, 15, 20 mins
-        difficultyLevel: difficulties[i],
-        courseId: course.id
-      }
-    });
-    lessons.push(lesson);
-  }
+  // 🎯 Helper
+  const rand = (min, max) =>
+    Math.floor(Math.random() * (max - min + 1)) + min;
 
-  // -----------------------
-  // Create Learners
-  // -----------------------
-  const learners = [];
+  // 📊 Create varied behavior
+  for (const user of users) {
+    let behaviorType = user.id % 5;
 
-  for (let i = 0; i < 10; i++) {
-    const learner = await prisma.user.create({
-      data: {
-        name: `Student ${i + 1}`,
-        email: `student${i + 1}@example.com`
-      }
-    });
-    learners.push(learner);
-  }
-
-  // -----------------------
-  // Activity Patterns
-  // -----------------------
-
-  for (let i = 0; i < learners.length; i++) {
-    const learner = learners[i];
-
-    for (let j = 0; j < lessons.length; j++) {
-      const lesson = lessons[j];
-
+    for (const lesson of lessons) {
       let timeSpent;
-      let completed = true;
+      let completed;
 
       const expected = lesson.contentLength * 60;
 
-      // Pattern logic
-      switch (i) {
-
-        // Healthy learners (1–2)
+      switch (behaviorType) {
+        // 0️⃣ Highly engaged
         case 0:
-        case 1:
-          timeSpent = expected * (0.8 + Math.random() * 0.3);
+          timeSpent = rand(expected * 0.8, expected * 1.2);
+          completed = true;
           break;
 
-        // Disengaged (3–4)
-        case 2:
-        case 3:
-          timeSpent = expected * 0.1;
+        // 1️⃣ Disengaged
+        case 1:
+          timeSpent = rand(0, expected * 0.2);
           completed = false;
           break;
 
-        // Early Exit (5–6)
-        case 4:
-        case 5:
-        timeSpent = expected * (0.25 + Math.random() * 0.1); // 25–35%
-        completed = false;
-        break;
+        // 2️⃣ Early exit pattern
+        case 2:
+          timeSpent = rand(expected * 0.1, expected * 0.3);
+          completed = false;
+          break;
 
-        // Difficulty Avoidance (7–8)
-        case 6:
-        case 7:
+        // 3️⃣ Difficulty avoidance (good on easy, bad on hard)
+        case 3:
           if (lesson.difficultyLevel === "hard") {
-            timeSpent = expected * 0.1;
+            timeSpent = rand(0, expected * 0.2);
+            completed = false;
           } else {
-            timeSpent = expected * 0.9;
+            timeSpent = rand(expected * 0.7, expected);
+            completed = true;
           }
           break;
 
-        // Drift learner (9)
-        case 8:
-          if (j < 6) {
-            timeSpent = expected * 0.9;
-          } else {
-            timeSpent = expected * 0.2;
-          }
-          break;
-
-        // Improving learner (10)
-        case 9:
-          if (j < 6) {
-            timeSpent = expected * 0.2;
-          } else {
-            timeSpent = expected * 0.9;
-          }
+        // 4️⃣ Mixed / realistic
+        case 4:
+          timeSpent = rand(expected * 0.3, expected);
+          completed = Math.random() > 0.4;
           break;
       }
 
       await prisma.lessonActivity.create({
         data: {
-          userId: learner.id,
+          userId: user.id,
           lessonId: lesson.id,
-          timeSpent: Math.floor(timeSpent),
+          timeSpent,
           completed,
-          timestamp: new Date(Date.now() - (lessons.length - j) * 86400000)
+          timestamp: new Date(Date.now() - rand(0, 10) * 86400000)
         }
       });
     }
   }
 
-  console.log("Seeding complete.");
+  console.log("✅ Seed data created");
 }
 
 main()

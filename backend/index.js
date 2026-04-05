@@ -3,7 +3,7 @@ const {
   getEarlyExitRate,
   getDifficultyAvoidance,
   getCompletionConsistency,
-  getEffortDeviation,
+  getEffortConsistency,
   calculateLearnerMetrics,
   classifyIntent
 } = require("./metricsService");
@@ -244,13 +244,13 @@ app.get("/metrics/effort-deviation/:userId", async (req, res) => {
 
     const results = activities.map((a) => {
       const expectedTime = a.lesson.contentLength * 60;
-      const effortDeviation = a.timeSpent - expectedTime;
+      const effortConsistency = a.timeSpent - expectedTime;
 
       return {
         lessonId: a.lessonId,
         timeSpent: a.timeSpent,
         expectedTime,
-        effortDeviation,
+        effortConsistency,
         timestamp: a.timestamp,
       };
     });

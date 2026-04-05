@@ -131,6 +131,11 @@ function LearnerDetail({ learner }) {
             <strong>Completion Consistency:</strong><br />
             completedSessions ÷ totalSessions
           </p>
+
+          <p>
+            <strong>Effort Consistency:</strong><br />
+            1 − variability in time spent across sessions
+          </p>
         </div>
       )}
     </div>
