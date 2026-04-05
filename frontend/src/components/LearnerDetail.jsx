@@ -24,6 +24,12 @@ function LearnerDetail({ learner }) {
     );
   }
 
+  const getTrendLabel = (drift) => {
+    if (drift < -0.1) return "📉 Declining";
+    if (drift > 0.1) return "📈 Improving";
+    return "➡️ Stable";
+  };
+
   return (
     <section>
       <h2>Learner Detail</h2>
@@ -51,20 +57,22 @@ function LearnerDetail({ learner }) {
       >
         {metrics.intentStatus}
       </span>
-      <p style={{ marginTop: "10px" }}>
+        <p style={{ marginTop: "10px" }}>
         <strong>Engagement Trend:</strong>{" "}
         <span
           style={{
             color:
               metrics.intentDrift < -0.1
-                ? "#F44336"   // red
+                ? "#F44336"
                 : metrics.intentDrift > 0.1
-                ? "#4CAF50"   // green
-                : "#ccc"      // neutral
+                ? "#4CAF50"
+                : "#ccc"
           }}
         >
+          {getTrendLabel(metrics.intentDrift)} (
           {metrics.intentDrift > 0 ? "+" : ""}
           {metrics.intentDrift}
+          )
         </span>
       </p>
     </div>
