@@ -12,3 +12,4 @@ export async function getLearnerMetrics(id) {
   const res = await fetch(`http://localhost:3000/metrics/learner/${id}`);
   return res.json();
 }
+

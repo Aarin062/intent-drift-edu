@@ -73,31 +73,4 @@ function ClassOverview({ summary, onRiskClick }) {
   );
 }
 
-function StatusBar({ label, value, percentage, color }) {
-  return (
-    <div style={{ marginBottom: "10px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <span>{label}</span>
-        <span>{value} ({percentage}%)</span>
-      </div>
-      <div
-        style={{
-          height: "8px",
-          backgroundColor: "#ddd",
-          borderRadius: "4px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${percentage}%`,
-            backgroundColor: color,
-            height: "100%",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export default ClassOverview;

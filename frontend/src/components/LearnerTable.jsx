@@ -1,13 +1,4 @@
 function LearnerTable({ learners, onSelect }) {
-  if (!learners || learners.length === 0) {
-    return (
-      <section style={{ marginTop: "40px" }}>
-        <h2>Learners</h2>
-        <p>No learners found.</p>
-      </section>
-    );
-  }
-  
   const getTrendSymbol = (drift) => {
     if (drift === null || drift === undefined) return "→";
 

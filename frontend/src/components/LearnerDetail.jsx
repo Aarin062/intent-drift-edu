@@ -1,19 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import MetricBreakdown from "./MetricBreakdown";
 import IntentTimeline from "./IntentTimeline";
-import { getLearnerMetrics } from "../services/api";
 
 function LearnerDetail({ learner }) {
-  const [metrics, setMetrics] = useState(null);
   const [showFormula, setShowFormula] = useState(false);
-
-  useEffect(() => {
-    if (!learner) return;
-
-    getLearnerMetrics(learner.id)
-      .then(setMetrics)
-      .catch(console.error);
-  }, [learner]);
+  const metrics = learner?.metrics || null;
 
   if (!learner) {
     return (
